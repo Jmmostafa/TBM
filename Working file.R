@@ -55,9 +55,7 @@ dataPart <- data %>%
     TRUE ~ 0),
     HL = case_when(
       `Bank Name`== "Deutsche Bank"~1,
-      TRUE ~ 0)) %>% 
-  group_by(`Bank Name`) %>% 
-  mutate(BankID = )
+      TRUE ~ 0)) 
 
 dataPart %>% 
   # group_by(LL,HL) %>% 
@@ -76,6 +74,23 @@ dataPart %>%
   ) %>% t()
 
 
+# variable summary stat (x_it) plus macro variables
+# N, mean, std.dev, min, max
+
+dataPart %>% 
+  summarise(
+    N=n(),
+    MeanEq = mean(log(`Total Common Equity`)),
+    MeanAss = mean(log(`Total Common Equity`)),
+    MeanEq = mean(log(`Total Common Equity`))
+    
+  )
+
+
+
+
+
+
 # Need to draw the figures (4 figures)
 
 
@@ -84,14 +99,24 @@ dataPart %>%
 # questions 1: Elasticity of bank activity with respect to bank capital
 # log (total asset) == log (total equity)
 library(plm)
+pData <- pdata.frame(data[,c(2,3,6:34)], index = c('BankID'))
+# pData$row.names <- make.unique(pData$row.names)
 
 
 
+linearModel1 <- lm(formula = log(pData$`Total Assets`)~log(pData$`Total Common Equity`),data = pData)
 
-plm(formula = log(data$`Total Assets`)~log(data$`Total Common Equity`)|`Bank Name`,data = data,model = "pooling")
+plm1_i <- plm(formula = log(`Total.Assets`)~log(`Total.Common.Equity`), 
+    data = pData, 
+    model = 'within', 
+    effect = "time")
+summary(plm1_i)
 
-
-
+plm1_ii <- plm(formula = log(`Total.Assets`)~log(`Total.Common.Equity`)+`Return.on.Assets`, 
+    data = pData, 
+    model = 'within', 
+    effect = "individual")
+summary(plm1_ii)
 
 
 
