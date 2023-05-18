@@ -93,6 +93,58 @@ dataPart %>%
 
 # Need to draw the figures (4 figures)
 
+library(ggplot2)
+
+# Asset and total equity (i)
+
+data %>% 
+  group_by(Year) %>% 
+  summarise(
+    meanAE=median(`Assets/Equity`),
+    q1 = quantile(`Assets/Equity`, probs = 0.25),
+    q3 = quantile(`Assets/Equity`, probs = 0.75)
+  ) %>% 
+  ungroup() %>% 
+  pivot_longer(cols = -Year,names_to = "variable",values_to = "value") %>% 
+  ggplot(mapping = aes(x=Year, y= value, col =variable))+
+  geom_line(size =1.2)+
+  ylim(c(8,30))+
+  theme_minimal()
+
+# RWA and Tier 1 capital ratio (iii)
+
+data %>% 
+  group_by(Year) %>% 
+  summarise(
+    meanAE=median(`RWA/Tier 1`),
+    q1 = quantile(`RWA/Tier 1`, probs = 0.25),
+    q3 = quantile(`RWA/Tier 1`, probs = 0.75)
+  ) %>% 
+  ungroup() %>% 
+  pivot_longer(cols = -Year,names_to = "variable",values_to = "value") %>% 
+  ggplot(mapping = aes(x=Year, y= value, col =variable))+
+  geom_line(size =1.2)+
+  # ylim(c(8,30))+
+  theme_minimal()
+  
+
+# Total fair value of the asset and the market value of the equity (need the market value of equity) (iv)
+
+data %>% 
+  group_by(Year) %>% 
+  summarise(
+    meanAE=median(`Total Fair Value Assets/Total Equity`),
+    q1 = quantile(`Total Fair Value Assets/Total Equity`, probs = 0.25),
+    q3 = quantile(`Total Fair Value Assets/Total Equity`, probs = 0.75)
+  ) %>% 
+  ungroup() %>% 
+  pivot_longer(cols = -Year,names_to = "variable",values_to = "value") %>% 
+  ggplot(mapping = aes(x=Year, y= value, col =variable))+
+  geom_line(size =1.2)+
+  # ylim(c(8,30))+
+  theme_minimal()
+
+
 
 
 
@@ -102,9 +154,7 @@ library(plm)
 pData <- pdata.frame(data[,c(2,3,6:34)], index = c('BankID'))
 # pData$row.names <- make.unique(pData$row.names)
 
-
-
-linearModel1 <- lm(formula = log(pData$`Total Assets`)~log(pData$`Total Common Equity`),data = pData)
+linearModel1 <- lm(formula = log(data$`Total Assets`)~log(data$`Total Common Equity`),data = data)
 
 plm1_i <- plm(formula = log(`Total.Assets`)~log(`Total.Common.Equity`), 
     data = pData, 
@@ -118,15 +168,185 @@ plm1_ii <- plm(formula = log(`Total.Assets`)~log(`Total.Common.Equity`)+`Return.
     effect = "individual")
 summary(plm1_ii)
 
+# question 2: Does equity react to the cycle?
+
+plm2_i <- plm(formula = log(`Total.Common.Equity`)~lag(log(`Total.Common.Equity`))
+              +`Return.on.Assets`+`GAAP.IFRS`, 
+               data = pData, 
+               model = 'within',
+              effect = 'twoways')
+summary(plm2_i)
+
+# second parts
+
+plm2_ii <- plm(formula = log(`Total.Common.Equity`)~lag(log(`Total.Common.Equity`))
+               +Crisis
+               +Crisis:lag(log(`Total.Common.Equity`))
+               +`Return.on.Assets`
+               +`Return.on.Assets`:Crisis
+               +`GAAP.IFRS`, 
+               data = pData, 
+               model = 'within') # need to have the data based on ruling around the effects
+summary(plm2_ii)
+
+
+
+
+# further parts with macrodata (i: common equity)
+
+
+# (a)
+
+plm2_iii <- plm(formula = `Equity.Growth`~ `GDP.growth`,
+               data = pData, 
+               model = 'within',
+               effect = 'twoways') # need to have the data based on ruling around the effects
+summary(plm2_iii)
+
+# (c)
+
+plm2_iii <- plm(formula = `Equity.Growth`~ `GDP.growth`+ `GDP.growth`:Crisis,
+               data = pData, 
+               model = 'within',
+               effect = 'twoways') # need to have the data based on ruling around the effects
+summary(plm2_iii)
+
+# (b)
+
+plm2_iii <- plm(formula = `Equity.Growth`~ `Stock.Market.Growth`,
+               data = pData, 
+               model = 'within',
+               effect = 'twoways') # need to have the data based on ruling around the effects
+summary(plm2_iii)
+
+# (d)
+
+plm2_iii <- plm(formula = `Equity.Growth`~ `Stock.Market.Growth`+`Stock.Market.Growth`:Crisis,
+               data = pData, 
+               model = 'within',
+               effect = 'twoways') # need to have the data based on ruling around the effects
+summary(plm2_iii)
+
+
+
+# further parts with macrodata (ii: Tier 1 equity)
+
+# (a)
+
+plm2_iii <- plm(formula = `Tier.1.Growth`~ `GDP.growth`,
+               data = pData, 
+               model = 'within',
+               effect = 'twoways') # need to have the data based on ruling around the effects
+summary(plm2_iii)
+
+# (c)
+
+plm2_iii <- plm(formula = `Tier.1.Growth`~ `GDP.growth`+ `GDP.growth`:Crisis,
+               data = pData, 
+               model = 'within',
+               effect = 'twoways') # need to have the data based on ruling around the effects
+summary(plm2_iii)
+
+# (b)
+
+plm2_iii <- plm(formula = `Tier.1.Growth`~ `Stock.Market.Growth`,
+               data = pData, 
+               model = 'within',
+               effect = 'twoways') # need to have the data based on ruling around the effects
+summary(plm2_iii)
+
+# (d)
+
+plm2_iii <- plm(formula = `Tier.1.Growth`~ `Stock.Market.Growth`+`Stock.Market.Growth`:Crisis,
+               data = pData, 
+               model = 'within',
+               effect = 'twoways') # need to have the data based on ruling around the effects
+summary(plm2_iii)
 
 
 
 
 
+# question 3: Impact of bank capitalization on funding costs
+
+(a)
+
+plm3_i <- plm(formula = `Interest.Expense.`~lag(`Assets.Equity`)
+              +lag(`Interest.Expense.`)
+              +`Return.on.Assets`
+              +`GAAP.IFRS`,
+               data = pData, 
+               model = 'within',
+              effect = 'twoways')
+summary(plm3_i)
+
+(b)
+
+plm3_i <- plm(formula = `Interest.Expense.`~lag(`RWA.Tier.1`)
+              +lag(`Interest.Expense.`)
+              +`Return.on.Assets`
+              +`GAAP.IFRS`,
+              data = pData, 
+              model = 'within',
+              effect = 'twoways')
+summary(plm3_i)
 
 
+
+(c)
+
+
+plm3_i <- plm(formula = `Interest.Expense.`~lag(`Total.Common.Equity`/`Total.Assets`)
+              +lag(`Interest.Expense.`)
+              +`Return.on.Assets`
+              +`GAAP.IFRS`,
+              data = pData, 
+              model = 'within',
+              effect = 'twoways')
+summary(plm3_i)
+  
+# now same model but controlling macroeconomic variables 
+
+# (a) need to do it later again
+
+plm3_i <- plm(formula = `Interest.Expense.`~lag(`Assets.Equity`)
+              +lag(`Interest.Expense.`)
+              + `GDP.growth`
+              + `MP3.growth`
+              + `Stock.Market.Growth`
+              +`Return.on.Assets`
+              +`GAAP.IFRS`,
+               data = pData, 
+               model = 'within',
+              effect = 'twoways')
+summary(plm3_i)
+
+# (b)
+
+plm3_i <- plm(formula = `Interest.Expense.`~lag(`RWA.Tier.1`)
+              +lag(`Interest.Expense.`)
+              +`Return.on.Assets`
+              +`GAAP.IFRS`,
+              data = pData, 
+              model = 'within',
+              effect = 'twoways')
+summary(plm3_i)
+
+
+
+# (c)
+
+
+plm3_i <- plm(formula = `Interest.Expense.`~lag(`Total.Common.Equity`/`Total.Assets`)
+              +lag(`Interest.Expense.`)
+              +`Return.on.Assets`
+              +`GAAP.IFRS`,
+              data = pData, 
+              model = 'within',
+              effect = 'twoways')
+summary(plm3_i)
   
 
-
+# Need to complete the funding analysis issues as soon as possible (tomorrow will be even better)
 
 
