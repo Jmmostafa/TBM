@@ -409,15 +409,14 @@ fig_C <- dataFig %>%
         plot.caption = element_text(hjust = 0))
 
 
+# using patch work package for combining multiple graph at once ------------------
+
+
 library(gridExtra)
 library(patchwork)
 library(cowplot)
 
 fig_A|fig_B/fig_C
-
-
-# par(mfrow =c(2,2))
-
 
 
 
@@ -431,20 +430,22 @@ fig_A|fig_B/fig_C
 # log (total asset) == log (total equity)+ROA + (firm + year) fixed effect ------(iv)
 
 q1modeli <- plm(formula = log(TA)~log(TCE),model = 'within',data = data)
-q1modelii <- plm(formula = log(TA)~log(TCE)+ROA,model = 'within',data = data)
-q1modeliii <- plm(formula = log(TA)~log(TCE)+ROA,model = 'within',index = c('bankID'), data = data)
-q1modeliv <- plm(formula = log(TA)~log(TCE)+ROA,model = 'within',index = c('bankID','year'),data = data)
-q1modelv <- plm(formula = log(TA)~log(TCE)+ROA,model = 'within',effect = 'twoways',index = c('bankID','year'),data = data)
+q1modelii <- plm(formula = log(TA)~log(TCE)+ROA+TAG+factor(IFRS),model = 'within',data = data)
+q1modeliii <- plm(formula = log(TA)~log(TCE)+ROA+TAG+factor(IFRS),model = 'within',index = 'bankID', data = data)
+q1modeliv <- plm(formula = log(TA)~log(TCE)+ROA+TAG+factor(IFRS),model = 'within',index = c('bankID','year'),data = data)
+q1modelv <- plm(formula = log(TA)~log(TCE)+ROA,model = 'within',effect = 'twoways',index = c('bankID','year'),data = data) # we haven't reported that one....
 
 
 # compiling the results
-result1 <- stargazer(q1modeli,q1modelii,q1modeliii,q1modeliv,q1modelv, type = 'text',
-          omit.summary.stat = 'mean',header = FALSE,
+result1 <- stargazer(q1modeli,q1modelii,q1modeliii,q1modeliv, q1modeliv, type = 'text',
+          omit.summary.stat = 'mean',header = TRUE,
           digits = 3)
 
-write.table(result1, 
+
+write.table(result1,
             file = 'clipboard',
-            sep = "/",
+            sep = " ",
+            qmethod = 'double',
             row.names = TRUE,
             col.names = TRUE)
 
@@ -458,14 +459,14 @@ pbgtest(q1modeli,order = 1)
 # handful try --------------------------------------------------------------------
 
 
-# unit root test of the variables
-ur.df(as.data.frame(q1modeli$residuals),type = 'none', lags = NULL, model='fixed') %>% summary()
-punitroot(q1modeli$residuals,test='adf')
-
-library(tseries)
-x <- as.data.frame(q1modeli$residuals)
-pp.test(x$`q1modeli$residuals`, alternative = 'stationary') %>% summary()
-
+# # unit root test of the variables
+# ur.df(as.data.frame(q1modeli$residuals),type = 'none', lags = NULL, model='fixed') %>% summary()
+# punitroot(q1modeli$residuals,test='adf')
+# 
+# library(tseries)
+# x <- as.data.frame(q1modeli$residuals)
+# pp.test(x$`q1modeli$residuals`, alternative = 'stationary') %>% summary()
+# 
 
 
 # --------------------------------------------------------------------------------
@@ -487,21 +488,34 @@ pp.test(x$`q1modeli$residuals`, alternative = 'stationary') %>% summary()
 # growth rate of Tier 1 capital == stock market growth:crisis_II +lag( growth rate of Tier 1 capita)+ROA+IFRS, index=('bankID') ------(iv)
 
 
-q2_1modeli <- plm(formula = TCEG~lag(TCEG)+GDPGrowth+ROA+IFRS,
+q2_1modeli <- plm(formula = TCEG~lag(TCEG)+GDPGrowth+ROA+TAG+factor(IFRS),
                   index = 'bankID',model = 'within',data = data)
 
-q2_1modelii <- plm(formula = TCEG~lag(TCEG)+SMGSnP500+ROA+IFRS,
+q2_1modelii <- plm(formula = TCEG~lag(TCEG)+SMGSnP500+ROA+TAG+factor(IFRS),
                    index = 'bankID',model = 'within',data = data)
 
-q2_1modeliii <- plm(formula = TCEG~lag(TCEG)+GDPGrowth:crisisGfc+ROA+IFRS,
+q2_1modeliii <- plm(formula = TCEG~lag(TCEG)+(GDPGrowth*crisisGfc)+ROA+TAG+factor(IFRS),
                     index = 'bankID',model = 'within',data = data)
 
-q2_1modeliv <- plm(formula = TCEG~lag(TCEG)+SMGSnP500:crisisGfc+ROA+IFRS,
+q2_1modeliv <- plm(formula = TCEG~lag(TCEG)+(SMGSnP500*crisisGfc)+ROA+TAG+factor(IFRS),
                    index = 'bankID',model = 'within',data = data)
 
 stargazer(q2_1modeli,q2_1modelii,q2_1modeliii,q2_1modeliv, type = 'text',
           omit.summary.stat = 'mean',
           digits=3)
+
+
+result2_1 <- stargazer(q2_1modeli,q2_1modelii,q2_1modeliii,q2_1modeliv, type = 'text',
+                       omit.summary.stat = 'mean',
+                       digits=3)
+
+write.table(result2_1,
+            file = 'clipboard',
+            sep = " ",
+            qmethod = 'double',
+            row.names = TRUE,
+            col.names = TRUE)
+
 pbgtest(q2_1modeli,order = 1)
 pbgtest(q2_1modelii,order = 1)
 pbgtest(q2_1modeliii,order = 1)
@@ -510,21 +524,33 @@ pbgtest(q2_1modeliv,order = 1)
 
 # 2nd part -----------------------------------------------------------------------
 
-q2_2modeli <- plm(formula = TierCapGrowth~lag(TierCapGrowth)+GDPGrowth+ROA+IFRS,
+q2_2modeli <- plm(formula = TierCapGrowth~lag(TierCapGrowth)+GDPGrowth+ROA+TAG+factor(IFRS),
                   index = 'bankID',model = 'within',data = data)
 
-q2_2modelii <- plm(formula = TierCapGrowth~lag(TierCapGrowth)+SMGSnP500+ROA+IFRS,
+q2_2modelii <- plm(formula = TierCapGrowth~lag(TierCapGrowth)+SMGSnP500+ROA+TAG+factor(IFRS),
                    index = 'bankID',model = 'within',data = data)
 
-q2_2modeliii <- plm(formula = TierCapGrowth~lag(TierCapGrowth)+GDPGrowth:crisisGfc+ROA+IFRS,
+q2_2modeliii <- plm(formula = TierCapGrowth~lag(TierCapGrowth)+(GDPGrowth*crisisGfc)+ROA+TAG+factor(IFRS),
                     index = 'bankID',model = 'within',data = data)
 
-q2_2modeliv <- plm(formula = TierCapGrowth~lag(TierCapGrowth)+SMGSnP500:crisisGfc+ROA+IFRS,
+q2_2modeliv <- plm(formula = TierCapGrowth~lag(TierCapGrowth)+(SMGSnP500*crisisGfc)+ROA+TAG+factor(IFRS),
                    index = 'bankID',model = 'within',data = data)
 
 stargazer(q2_2modeli,q2_2modelii,q2_2modeliii,q2_2modeliv, type = 'text',
           omit.summary.stat = 'mean',
           digits = 3)
+
+result2_2 <- stargazer(q2_2modeli,q2_2modelii,q2_2modeliii,q2_2modeliv, type = 'text',
+                       omit.summary.stat = 'mean',
+                       digits = 3)
+
+write.table(result2_2,
+            file = 'clipboard',
+            sep = " ",
+            qmethod = 'double',
+            row.names = TRUE,
+            col.names = TRUE)
+
 
 pbgtest(q2_2modeli,order = 1)
 pbgtest(q2_2modelii,order = 1)
@@ -539,43 +565,58 @@ pbgtest(q2_2modeliv,order = 1)
 # without macroVar ---------------------------------------------------------------
 
 q3_1modeli <- plm(formula = FundingCost~lag(FundingCost)+lag(TA_TE)
-                  +ROA +factor(IFRS),
+                  +ROA +TAG+factor(IFRS),
                   index = c('bankID','year'),
-                  model = 'fd',
+                  model = 'within',
                   data = data)
 
 q3_1modelii <- plm(formula = FundingCost~lag(FundingCost)+lag(RWA_TierCap)
-                   +ROA+factor(IFRS),
+                   +ROA+TAG+factor(IFRS),
                    index = c('bankID','year'),
-                   model = 'fd',data = data)
+                   model = 'with',data = data)
 
 # 2nd part (with macro variables) -------------------------------------------------
 
 
 q3_2modeli <- plm(formula = FundingCost~lag(FundingCost)+lag(TA_TE)
                   +GDPGrowth+SMGSnP500
-                  +ROA +factor(IFRS),
+                  +ROA+ TAG +factor(IFRS),
                   index = c('bankID','year'),
-                  model = 'fd',
+                  model = 'within',
                   data = data)
 
 q3_2modelii <- plm(formula = FundingCost~lag(FundingCost)+lag(RWA_TierCap)
                    +GDPGrowth+SMGSnP500
-                   +ROA+factor(IFRS),
+                   +ROA+TAG+factor(IFRS),
                    index = c('bankID','year'),
-                   model = 'fd',data = data)
+                   model = 'within',data = data)
 
 q3_2modeliii <- plm(formula = FundingCost~lag(FundingCost)+lag((TCE/TA)*100)
                    +GDPGrowth+SMGSnP500
-                   +ROA+factor(IFRS),
+                   +ROA+TAG+factor(IFRS),
                    index = c('bankID','year'),
-                   model = 'fd',data = data)
+                   model = 'within',data = data)
 
 
 stargazer(q3_1modeli, q3_1modelii, q3_2modeli, q3_2modelii, q3_2modeliii,
           type = 'text',
           omit.summary.stat = 'mean',
           digits = 3)
+
+result3 <- stargazer(q3_1modeli, q3_1modelii, q3_2modeli, q3_2modelii, q3_2modeliii,
+                     type = 'text',
+                     omit.summary.stat = 'mean',
+                     digits = 3)
+
+write.table(result3,
+            file = 'clipboard',
+            sep = " ",
+            qmethod = 'double',
+            row.names = TRUE,
+            col.names = TRUE)
+
+
+
 
 pbgtest(q3_1modeli,order = 1)
 pbgtest(q3_1modelii,order = 1)
@@ -617,11 +658,11 @@ pgmm(FundingCost ~  lag(RWA_TierCap)
 
 # without macroVar ---------------------------------------------------------------
 
-q4_1modeli <- plm(formula = TFundGrow~lag(TFundGrow)+lag(TA_TE)+ROA+factor(IFRS),
+q4_1modeli <- plm(formula = TFundGrow~lag(TFundGrow)+lag(TA_TE)+ROA+TAG+factor(IFRS),
                   index = c('bankID','year'),
                   model = 'within',
                   data = data)
-q4_1modelii <- plm(formula = TFundGrow~lag(TFundGrow)+lag(RWA_TierCap)+ROA+factor(IFRS),
+q4_1modelii <- plm(formula = TFundGrow~lag(TFundGrow)+lag(RWA_TierCap)+ROA+TAG+factor(IFRS),
                    index = c('bankID','year'),
                    model = 'within',
                    data = data)
@@ -630,20 +671,36 @@ q4_1modelii <- plm(formula = TFundGrow~lag(TFundGrow)+lag(RWA_TierCap)+ROA+facto
 
 
 q4_2modeli <- plm(formula = TFundGrow~lag(TFundGrow)+lag(TA_TE)
-                  +GDPGrowth+SMGSnP500+ROA+factor(IFRS),
+                  +GDPGrowth+SMGSnP500+ROA+TAG+factor(IFRS),
                   index = c('bankID','year'),
                   model = 'within',
                   data = data)
 
 q4_2modelii <- plm(formula = TFundGrow~lag(TFundGrow)+lag(RWA_TierCap)
-                   +GDPGrowth+SMGSnP500+ROA+factor(IFRS),
+                   +GDPGrowth+SMGSnP500+ROA+TAG+factor(IFRS),
                    index = c('bankID','year'),
-                   model = 'fd',data = data)
+                   model = 'within',data = data)
 
 stargazer(q4_1modeli, q4_1modelii, q4_2modeli, q4_2modelii,
           type = 'text',
           omit.summary.stat = 'mean',
           digits = 3)
+
+result4 <- stargazer(q4_1modeli, q4_1modelii, q4_2modeli, q4_2modelii,
+                     type = 'text',
+                     omit.summary.stat = 'mean',
+                     digits = 3)
+
+
+write.table(result4,
+            file = 'clipboard',
+            sep = " ",
+            qmethod = 'double',
+            row.names = TRUE,
+            col.names = TRUE)
+
+
+
 
 pbgtest(q4_1modeli,order = 1)
 pbgtest(q4_1modelii,order = 1)
@@ -659,11 +716,11 @@ pbgtest(q4_2modelii,order = 1)
 
 # without macroVar ---------------------------------------------------------------
 
-q5_1modeli <- plm(formula = LG~lag(LG)+lag(TA_TE)+ROA+factor(IFRS),
+q5_1modeli <- plm(formula = LG~lag(LG)+lag(TA_TE)+ROA+TAG+factor(IFRS),
                   index = c('bankID','year'),
                   model = 'within',
                   data = data)
-q5_1modelii <- plm(formula = LG~lag(LG)+lag(RWA_TierCap)+ROA+factor(IFRS),
+q5_1modelii <- plm(formula = LG~lag(LG)+lag(RWA_TierCap)+TAG+ROA+factor(IFRS),
                    index = c('bankID','year'),
                    model = 'within',
                    data = data)
@@ -671,26 +728,43 @@ q5_1modelii <- plm(formula = LG~lag(LG)+lag(RWA_TierCap)+ROA+factor(IFRS),
 # 2nd part (with macro variables) -------------------------------------------------
 
 
-q5_2modeli <- plm(formula = LG~lag(LG)+lag(TA_TE)+ROA+factor(IFRS)
+q5_2modeli <- plm(formula = LG~lag(LG)+lag(TA_TE)+ROA+TAG+factor(IFRS)
                   +GDPGrowth+SMGSnP500,
                   index = c('bankID','year'),
                   model = 'within',
                   data = data)
 
-q5_2modelii <- plm(formula = LG~lag(LG)+lag(RWA_TierCap)+ROA+factor(IFRS)
+q5_2modelii <- plm(formula = LG~lag(LG)+lag(RWA_TierCap)+ROA+TAG+factor(IFRS)
                    +GDPGrowth+SMGSnP500,
                    index = c('bankID','year'),
                    model = 'fd',data = data)
 
-stargazer(q5_1modeli, q5_1modelii, q5_2modeli, q5_2modelii,
+q5_2modeliii <- plm(formula = LG~lag(LG)+lag(TCE/TA*100)+ROA+TAG+factor(IFRS)
+                   +GDPGrowth+SMGSnP500,
+                   index = c('bankID','year'),
+                   model = 'fd',data = data)
+
+result5 <- stargazer(q5_1modeli, q5_1modelii, q5_2modeli, q5_2modelii,q5_2modeliii,
           type = 'text',
           omit.summary.stat = 'mean',
           digits = 3)
+
+
+write.table(result5,
+            file = 'clipboard',
+            sep = " ",
+            qmethod = 'double',
+            row.names = TRUE,
+            col.names = TRUE)
+
+
+
 
 pbgtest(q5_1modeli,order = 1)
 pbgtest(q5_1modelii,order = 1)
 pbgtest(q5_2modeli,order = 1)
 pbgtest(q5_2modelii,order = 1)
+pbgtest(q5_2modeliii,order = 1)
 
 
 
@@ -705,6 +779,7 @@ q6_1modeli <- plm(formula = LG~lag(LG)+lag(TA_TE)+(lag(TA_TE)*MPGrowth),
                   index = c('bankID','year'),
                   model = 'within',
                   data = data)
+
 q6_1modelii <- plm(formula = LG~lag(LG)+lag(RWA_TierCap)+(lag(RWA_TierCap)*MPGrowth),
                    index = c('bankID','year'),
                    model = 'within',
@@ -714,14 +789,14 @@ q6_1modelii <- plm(formula = LG~lag(LG)+lag(RWA_TierCap)+(lag(RWA_TierCap)*MPGro
 
 
 q6_2modeli <- plm(formula = LG~lag(LG)+lag(TA_TE)+(lag(TA_TE)*MPGrowth)+
-                    ROA+factor(IFRS)+
+                    ROA+TAG+factor(IFRS)+
                     GDPGrowth+SMGSnP500,
                   index = c('bankID','year'),
                   model = 'within',
                   data = data)
 
 q6_2modelii <- plm(formula = LG~lag(LG)+lag(RWA_TierCap)+(lag(RWA_TierCap)*MPGrowth)+
-                     ROA+factor(IFRS)
+                     ROA+TAG+factor(IFRS)
                    +GDPGrowth+SMGSnP500,
                    index = c('bankID','year'),
                    model = 'within',data = data)
@@ -730,6 +805,20 @@ stargazer(q6_1modeli, q6_1modelii, q6_2modeli, q6_2modelii,
           type = 'text',
           omit.summary.stat = 'mean',
           digits = 3)
+
+result6 <- stargazer(q6_1modeli, q6_1modelii, q6_2modeli, q6_2modelii,
+                     type = 'text',
+                     omit.summary.stat = 'mean',
+                     digits = 3)
+
+write.table(result6,
+            file = 'clipboard',
+            sep = " ",
+            qmethod = 'double',
+            row.names = TRUE,
+            col.names = TRUE)
+
+
 
 pbgtest(q6_1modeli,order = 1)
 pbgtest(q6_1modelii,order = 1)
