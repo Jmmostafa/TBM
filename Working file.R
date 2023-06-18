@@ -356,7 +356,7 @@ fig_A <- dataFig %>%
   theme_bw()+
   xlab('')+
   ylab('')+
-  labs(title = "Definition of leverage",
+  labs(title = "",
        subtitle = "Total Asset/Total Equity",
        caption = "Data source: Bloomberg") +
   theme(legend.position = 'bottom',
@@ -403,7 +403,7 @@ fig_C <- dataFig %>%
   xlab('')+
   ylab('')+
   labs(title = "",
-       subtitle = "Market Value of Asset/Market Value of Equity") +
+       subtitle = "MV of Asset/MV of Equity") +
   theme(legend.position = 'none',
         legend.title = element_blank(),
         plot.caption = element_text(hjust = 0))
@@ -938,10 +938,12 @@ pbgtest(q6_2modelii,order = 1)
 # further anlysis for my parts
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
+library(Cairo)
 
 dataWork <- as.data.frame(data)
 # dataWork$year <- as.Date(dataWork$year,format = '%Y')
 # dataWork$year <- format(as.Date(dataWork$year), format = "%Y")
+
 
 
 graph <- dataWork %>% 
@@ -951,8 +953,13 @@ graph <- dataWork %>%
     totalCE=mean(TCE/1000),
     totalASs=mean(TA/1000),
     totalfun=mean(TFunding/1000),
+    totalRwa=mean(RWA/1000),
+    totalTier1=mean(TierCap/1000),
     
   ) 
+
+
+CairoPDF("graph.pdf", width = 6, height = 5, bg = 'white')
 
 plot(
   x=graph$year,
@@ -960,7 +967,7 @@ plot(
   type='l',
   xlab = "",
   ylab = "Billion (USD)",
-  main = 'Sample Financial Overview (1989 - 2022)',
+  # main = 'Major Financial Overview (1989 - 2022)',
   col='red',
   ylim=c(0,1100)
 )
@@ -980,18 +987,73 @@ lines(
   y=graph$totalfun,
   col='yellow'
 )
+lines(
+  x=graph$year,
+  y=graph$totalRwa,
+  col='black'
+)
+lines(
+  x=graph$year,
+  y=graph$totalTier1,
+  col='pink'
+)
 
 legend("topleft", # orientation of legend
-       legend = c('Average Loan','Average Equity', 'Average Asset', 'Average Debt Funding'),
+       legend = c('Avg. Loan','Avg. Common Equity', 'Avg. Asset', 'Avg. Debt Funding','Avg. RWA','Avg. Tier 1 Capital' ),
        bg = "NA", # no background
        bty = "n", # no box around legend
-       cex = 0.75, # character expansion factor, 0.5 = half of the standard size
-       col = c("red","blue",'green','yellow'), # colour of the lines
+       cex = 0.85, # character expansion factor, 0.5 = half of the standard size
+       col = c("red","blue",'green','yellow', 'black','pink'), # colour of the lines
        lty = 1) 
 
+dev.off()
 
 
+# Leverage ratios ----------------------------------------------------------------
 
+graph_leverage <- dataWork %>% 
+  group_by(year) %>% 
+  summarise(
+    StandardL=mean(TA_TE)/sd(TA_TE),
+    RiskL=mean(RWA_TierCap)/sd(RWA_TierCap),
+    MarketL=mean(FVA_TCE)/sd(FVA_TCE)
+  ) 
+
+
+CairoPDF("graphL.pdf", width = 6, height = 5, bg = 'white')
+
+plot(
+  x=graph_leverage$year,
+  y=graph_leverage$StandardL,
+  type='l',
+  xlab = "",
+  ylab = "Standardized Ratios",
+  main = '',
+  col='red',
+  ylim=c(0,9.5)
+)
+
+lines(
+  x=graph_leverage$year,
+  y=graph_leverage$RiskL,
+  col='blue'
+)
+lines(
+  x=graph_leverage$year,
+  y=graph_leverage$MarketL,
+  col='green'
+)
+
+
+legend("topleft", # orientation of legend
+       legend = c('SL = Total Asset/Total Common Equity', 'RWL = RWA/Tier 1 Capital', 'ML = Market Value of Asset/ Market value of Equity'),
+       bg = "NA", # no background
+       bty = "n", # no box around legend
+       cex = 0.85, # character expansion factor, 0.5 = half of the standard size
+       col = c("red","blue",'green'), # colour of the lines
+       lty = 1) 
+
+dev.off()
 
 
 
